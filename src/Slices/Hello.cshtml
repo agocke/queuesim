@@ -1,0 +1,47 @@
+@inherits RazorSliceHttpResult<string>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Queuesim</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+<body>
+    <div style="width:400px;height=400px;margin:auto;">
+        <canvas id="myChart" width="400" height="400"></canvas>
+    </div>
+
+    <script>
+const ctx = document.getElementById('myChart');
+
+const qDepthPoints = //[65, 59, 80, 81, 56, 55, 40];
+    fetch('/sim');
+const labels = qDepthPoints.map((x, i) => i*5);
+const data = {
+  labels: labels,
+  datasets: [{
+    label: 'Queue Depth',
+    data: qDepthPoints,
+    fill: false,
+    borderColor: 'rgb(75, 192, 192)',
+  }]
+};
+
+new Chart(ctx, {
+    type: 'line',
+    data: data,
+    options: {
+        scales: {
+            x: {
+                text: 'Timestamp (min)'
+            },
+            y: {
+                text: 'Items in Queue'
+            }
+        }
+    }
+});
+    </script>
+</body>
+</html>

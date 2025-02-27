@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <!-- Enable central package management, https://learn.microsoft.com/en-us/nuget/consume-packages/Central-Package-Management -->
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageVersion Include="razorslices" Version="0.9.1" />
+    <PackageVersion Include="Serde" Version="0.7.1" />
+  </ItemGroup>
+</Project>
