@@ -5,13 +5,19 @@ namespace Queuesim;
 static partial class Sim
 {
     [GenerateSerde]
-    public partial record Job(int Duration);
+    public partial record struct Job(int Duration);
 
     [GenerateSerde]
-    public partial record JobGroup(
+    public partial record struct JobGroup(
         int StartTime,
         List<Job> Jobs
-    );
+    ) : IComparable<JobGroup>
+    {
+        public int CompareTo(JobGroup other)
+        {
+            return StartTime.CompareTo(other.StartTime);
+        }
+    }
 
     [GenerateSerde]
     public partial record Config(List<JobGroup> JobGroups)
@@ -26,30 +32,36 @@ static partial class Sim
         public required List<int> Running { get; init; }
     }
 
-    private record RunningJob(int EndTime);
+    internal class PriorityQueue<TElement> : PriorityQueue<TElement, TElement>
+        where TElement : IComparable<TElement>
+    {
+        public void EnqueueRange(IEnumerable<TElement> elements)
+        {
+            foreach (var element in elements)
+            {
+                Enqueue(element, element);
+            }
+        }
+    }
 
     public static Result Run(Config config)
     {
         int currentTime = 0;
 
-        List<JobGroup> sorted;
-        {
-            var unsorted = config.JobGroups.ToList();
-            unsorted.Sort((a, b) => a.StartTime.CompareTo(b.StartTime));
-            sorted = unsorted;
-        }
-
-        var jobGroups = new Queue<JobGroup>(sorted);
+        var jobGroups = new PriorityQueue<JobGroup>();
+        jobGroups.EnqueueRange(config.JobGroups);
         var jobQ = new Queue<Job>();
-        var running = new List<RunningJob>();
-        int occupiedWorkers = 0;
+        var workerPool = new WorkerPool();
 
-        var qDepths = new List<int>();
-        var runningByTime = new List<int>();
+        var result = new Result
+        {
+            QueueDepths = new List<int>(),
+            Running = new List<int>(),
+        };
 
         while (jobGroups.Count > 0 || jobQ.Count > 0)
         {
-            while (jobGroups.TryPeek(out var group) && group.StartTime == currentTime)
+            while (jobGroups.TryPeek(out var group, out _) && group.StartTime == currentTime)
             {
                 group = jobGroups.Dequeue();
                 foreach (var job in group.Jobs)
@@ -58,26 +70,18 @@ static partial class Sim
                 }
             }
 
-            while (running.Count < config.MaxWorkers && jobQ.TryDequeue(out var job))
+            while (workerPool.AvailableWorkers > 0 && jobQ.TryDequeue(out var job))
             {
-                running.Add(new RunningJob(currentTime + job.Duration));
+                workerPool.Enqueue(currentTime, job);
             }
 
-            while (running.Count > 0 && running[0].EndTime == currentTime)
-            {
-                running.RemoveAt(0);
-                occupiedWorkers--;
-            }
+            workerPool.RemoveFinishedJobs(currentTime);
 
-            qDepths.Add(jobQ.Count);
-            runningByTime.Add(running.Count);
+            result.QueueDepths.Add(jobQ.Count);
+            result.Running.Add(workerPool.RunningJobs);
             currentTime++;
         }
 
-        return new Result
-        {
-            QueueDepths = qDepths,
-            Running = runningByTime,
-        };
+        return result;
     }
 }
