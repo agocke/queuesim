@@ -1,5 +1,5 @@
 @using Microsoft.AspNetCore.Html;
-@inherits RazorSliceHttpResult<HtmlString?>
+@inherits RazorSliceHttpResult<Queuesim.SimResults?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -45,24 +45,55 @@
             });
         }
     </script>
+    <style>
+        .formEntry {
+            display: block;
+        }
+    </style>
 </head>
 
 <body>
     <div style="width:80%;margin:auto;">
         <h1>QueueSim</h1>
-        <div style="width:100%;display:block;">
-            <form action="/run" method="get">
-                <button style="float:left;">Run sim</button>
-            </form>
-        </div>
+        <form style="width:100%;max-width 800px;display:block;" action="/run" method="get">
+            <span class="formEntry">
+                <label>Workers</label>
+                <input name="workers" type="number" value="1" />
+            </span>
+            <span class="formEntry">
+                <label>Jobs to submit</label>
+                <textarea style="display:block;width:50em;height:5em;" type="json" name="jobData">
+[
+    {&quot;startTime&quot;: 1, &quot;jobs&quot;: [5, 5, 5] },
+    {&quot;startTime&quot;: 5, &quot;jobs&quot;: [1, 2, 3] }
+]
+                </textarea>
+            </span>
+            <button style="float:left;">Run sim</button>
+        </form>
         <canvas id="myChart"></canvas>
+        @if (Model != null)
+        {
+            <script>
+                drawChart(@Model.ChartData);
+            </script>
+            <table>
+                <tr>
+                    <th>Time (min)</th>
+                    <th>Waiting Jobs</th>
+                    <th>Running Jobs</th>
+                </tr>
+                @for (int i = 0; i < Model.Result.QueueDepths.Count; i++)
+                {
+                    <tr>
+                        <td>@i</td>
+                        <td>@Model.Result.QueueDepths[i]</td>
+                        <td>@Model.Result.Running[i]</td>
+                    </tr>
+                }
+            </table>
+        }
     </div>
-    @if (Model != null)
-    {
-        <script>
-            drawChart(@Model);
-        </script>
-    }
 </body>
 
 </html>

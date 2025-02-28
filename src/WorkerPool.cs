@@ -1,17 +1,15 @@
 
 namespace Queuesim;
 
-class WorkerPool
+class WorkerPool(int currentWorkers)
 {
-    private const int MaxWorkers = 1;
-
     private record struct RunningJob(int EndTime);
 
     private readonly List<RunningJob> _runningJobs = new();
 
     public int RunningJobs { get; private set; }
 
-    public int AvailableWorkers => MaxWorkers - RunningJobs;
+    public int AvailableWorkers => currentWorkers - RunningJobs;
 
     public void Enqueue(int currentTime, Sim.Job job)
     {

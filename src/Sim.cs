@@ -4,8 +4,24 @@ namespace Queuesim;
 
 static partial class Sim
 {
-    [GenerateSerde]
-    public partial record struct Job(int Duration);
+    public readonly partial record struct Job(
+        int Duration
+    ) : ISerializeProvider<Job>, IDeserializeProvider<Job>
+    {
+        private sealed class Proxy : ISerialize<Job>, IDeserialize<Job>
+        {
+            public static readonly Proxy Instance = new();
+            Job IDeserialize<Job>.Deserialize(IDeserializer deserializer)
+                => new Job(deserializer.ReadI32());
+
+            void ISerialize<Job>.Serialize(Job value, ISerializer serializer)
+                => serializer.SerializeI32(value.Duration);
+        }
+
+        static ISerialize<Job> ISerializeProvider<Job>.SerializeInstance => Proxy.Instance;
+        static IDeserialize<Job> IDeserializeProvider<Job>.DeserializeInstance => Proxy.Instance;
+        static ISerdeInfo ISerdeInfoProvider.SerdeInfo { get; } = Serde.SerdeInfo.MakePrimitive(nameof(Job));
+    }
 
     [GenerateSerde]
     public partial record struct JobGroup(
@@ -22,7 +38,7 @@ static partial class Sim
     [GenerateSerde]
     public partial record Config(List<JobGroup> JobGroups)
     {
-        public int MaxWorkers { get; init; } = 1;
+        public int Workers { get; init; } = 1;
     }
 
     [GenerateSerde]
@@ -51,7 +67,7 @@ static partial class Sim
         var jobGroups = new PriorityQueue<JobGroup>();
         jobGroups.EnqueueRange(config.JobGroups);
         var jobQ = new Queue<Job>();
-        var workerPool = new WorkerPool();
+        var workerPool = new WorkerPool(config.Workers);
 
         var result = new Result
         {
@@ -59,7 +75,7 @@ static partial class Sim
             Running = new List<int>(),
         };
 
-        while (jobGroups.Count > 0 || jobQ.Count > 0)
+        while (jobGroups.Count > 0 || jobQ.Count > 0 || workerPool.RunningJobs > 0)
         {
             while (jobGroups.TryPeek(out var group, out _) && group.StartTime == currentTime)
             {
@@ -70,12 +86,12 @@ static partial class Sim
                 }
             }
 
+            workerPool.RemoveFinishedJobs(currentTime);
+
             while (workerPool.AvailableWorkers > 0 && jobQ.TryDequeue(out var job))
             {
                 workerPool.Enqueue(currentTime, job);
             }
-
-            workerPool.RemoveFinishedJobs(currentTime);
 
             result.QueueDepths.Add(jobQ.Count);
             result.Running.Add(workerPool.RunningJobs);
