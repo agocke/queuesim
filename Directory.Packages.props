@@ -7,6 +7,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageVersion Include="razorslices" Version="0.9.1" />
-    <PackageVersion Include="Serde" Version="0.7.1" />
+    <PackageVersion Include="Serde" Version="0.8.0-preview2" />
   </ItemGroup>
 </Project>
