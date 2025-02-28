@@ -1,24 +1,45 @@
-using Queuesim;
+using Microsoft.AspNetCore.Html;
 using Serde.Json;
 using System.Text;
 
-var builder = WebApplication.CreateSlimBuilder(args);
+namespace Queuesim;
 
-var app = builder.Build();
+class Program
+{
+    public static void Main(string[] args)
+    {
+        var builder = WebApplication.CreateSlimBuilder(args);
 
-app.UseDefaultFiles();
-app.UseStaticFiles();
+        var app = builder.Build();
 
-app.MapGet("/sim", () => {
-    var config = new Sim.Config([
-        new(StartTime: 1, [new(5), new(5), new(5)]),
-        new(StartTime: 5, [new(1), new(2), new(3)]),
-    ]);
-    var results = Sim.Run(config);
-    return Results.Content(
-        JsonSerializer.Serialize(results),
-        "application/json",
-        Encoding.UTF8);
-});
+        app.MapGet("/", () =>
+        {
+            return Results.Extensions.RazorSlice<Queuesim.Slices.RenderChart, Microsoft.AspNetCore.Html.HtmlString?>(null);
+        });
 
-app.Run();
+        app.MapGet("/run", () => {
+            var config = new Sim.Config([
+                new(StartTime: 1, [new(5), new(5), new(5)]),
+                new(StartTime: 5, [new(1), new(2), new(3)]),
+            ]);
+            var results = JsonSerializer.Serialize(Sim.Run(config));
+            return Results.Extensions.RazorSlice<Queuesim.Slices.RenderChart, HtmlString?>(new HtmlString(results));
+        });
+
+        app.MapGet("/sim", () =>
+        {
+            var config = new Sim.Config([
+                new(StartTime: 1, [new(5), new(5), new(5)]),
+                    new(StartTime: 5, [new(1), new(2), new(3)]),
+            ]);
+            var results = Sim.Run(config);
+            return Results.Content(
+                JsonSerializer.Serialize(results),
+                "application/json",
+                Encoding.UTF8);
+        });
+
+        app.Run();
+
+    }
+}

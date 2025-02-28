@@ -1,3 +1,5 @@
+@using Microsoft.AspNetCore.Html;
+@inherits RazorSliceHttpResult<HtmlString?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -6,11 +8,10 @@
     <title>Queuesim</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        async function drawChart() {
+        async function drawChart(results) {
             const ctx = document.getElementById('myChart');
-            const jsonResponse = await (await fetch('/sim')).json();
-            const queueDepths = jsonResponse.queueDepths;
-            const running = jsonResponse.running;
+            const queueDepths = results.queueDepths;
+            const running = results.running;
             const labels = queueDepths.map((x, i) => i);
             const data = {
                 labels: labels,
@@ -47,10 +48,21 @@
 </head>
 
 <body>
-    <div style="width:400px;height:400px;margin:auto;">
-        <button style="float:left;" onclick="drawChart()">Run sim</button>
+    <div style="width:80%;margin:auto;">
+        <h1>QueueSim</h1>
+        <div style="width:100%;display:block;">
+            <form action="/run" method="get">
+                <button style="float:left;">Run sim</button>
+            </form>
+        </div>
         <canvas id="myChart"></canvas>
     </div>
+    @if (Model != null)
+    {
+        <script>
+            drawChart(@Model);
+        </script>
+    }
 </body>
 
 </html>
