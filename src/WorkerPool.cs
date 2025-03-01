@@ -17,9 +17,10 @@ class WorkerPool(int currentWorkers)
         RunningJobs++;
     }
 
-    public void RemoveFinishedJobs(int currentTime)
+    public int RemoveFinishedJobs(int currentTime)
     {
         var finished = _runningJobs.RemoveAll(job => job.EndTime == currentTime);
         RunningJobs -= finished;
+        return finished;
     }
 }

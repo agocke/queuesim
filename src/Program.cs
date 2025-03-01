@@ -7,7 +7,9 @@ namespace Queuesim;
 
 internal record SimResults(
     HtmlString ChartData,
-    Sim.Result Result
+    Sim.Result Result,
+    HtmlString JobData,
+    int Workers
 );
 
 class Program
@@ -24,13 +26,16 @@ class Program
         });
 
         app.MapGet("/run", (HttpContext ctx) => {
-            var jobData = JsonSerializer.DeserializeList<Sim.JobGroup>(ctx.Request.Query["jobData"]!);
+            var rawJobData = ctx.Request.Query["jobData"].Single()!;
+            var jobData = JsonSerializer.DeserializeList<Sim.Config.JobGroup>(rawJobData);
             var workers = int.Parse(ctx.Request.Query["workers"]!);
             var results = Sim.Run(new Sim.Config(jobData) { Workers = workers });
             var chartData = JsonSerializer.Serialize(results);
             return Results.Extensions.RazorSlice<RenderChart, SimResults?>(new(
                 new HtmlString(chartData),
-                results
+                results,
+                new HtmlString(rawJobData),
+                workers
             ));
         });
 
