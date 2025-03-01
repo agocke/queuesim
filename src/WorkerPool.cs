@@ -1,4 +1,6 @@
 
+using System.Collections.Generic;
+
 namespace Queuesim;
 
 class WorkerPool(int currentWorkers)
