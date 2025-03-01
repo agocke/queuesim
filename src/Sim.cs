@@ -47,6 +47,7 @@ static partial class Sim
         public required List<int> QueueDepths { get; init; }
         public required List<int> Running { get; init; }
         public required List<int> Finished { get; init; }
+        public required List<int> CurrentWorkers { get; init; }
     }
 
     internal class PriorityQueue<TElement> : PriorityQueue<TElement, TElement>
@@ -80,9 +81,13 @@ static partial class Sim
             QueueDepths = new List<int>(),
             Running = new List<int>(),
             Finished = new List<int>(),
+            CurrentWorkers = new List<int>(),
         };
 
-        while (jobGroups.Count > 0 || jobQ.Count > 0 || workerPool.RunningJobs > 0)
+        while (jobGroups.Count > 0
+            || jobQ.Count > 0
+            || workerPool.RunningJobs > 0
+            || workerPool.CurrentWorkers > workerPool.MinWorkers)
         {
             while (jobGroups.TryPeek(out var group, out _) && group.StartTime == currentTime)
             {
@@ -110,6 +115,7 @@ static partial class Sim
             result.QueueDepths.Add(jobQ.Count);
             result.Running.Add(workerPool.RunningJobs);
             result.Finished.Add(finished);
+            result.CurrentWorkers.Add(workerPool.CurrentWorkers);
             currentTime++;
         }
 

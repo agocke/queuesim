@@ -33,13 +33,10 @@ class ScalingWorkerPool(
     private ScaleState _scaleState = ScaleState.Stable;
     private int _scaleEndTime = -1;
 
-    // Prevent warning about multiple usage of primary constructor parameters
-    private readonly int _minWorkers = minWorkers;
-    private int _currentWorkers = minWorkers;
-
+    public int MinWorkers { get; } = minWorkers;
+    public int CurrentWorkers { get; private set; } = minWorkers;
     public int RunningJobs => _runningJobs.Count;
-
-    public int AvailableWorkers => _currentWorkers - RunningJobs;
+    public int AvailableWorkers => CurrentWorkers - RunningJobs;
 
     public void Enqueue(int queuedJobs, int currentTime, Sim.Job job)
     {
@@ -66,11 +63,11 @@ class ScalingWorkerPool(
             {
                 if (_scaleState == ScaleState.ScalingUp)
                 {
-                    _currentWorkers++;
+                    CurrentWorkers++;
                 }
                 else if (AvailableWorkers > 0)
                 {
-                    _currentWorkers--;
+                    CurrentWorkers--;
                 }
                 _scaleState = ScaleState.Stable;
                 _scaleEndTime = -1;
@@ -80,14 +77,14 @@ class ScalingWorkerPool(
 
         // Scale Up
         if (AvailableWorkers == 0 &&
-            queuedJobs > 0 && _currentWorkers < maxWorkers)
+            queuedJobs > 0 && CurrentWorkers < maxWorkers)
         {
             _scaleState = ScaleState.ScalingUp;
             _scaleEndTime = currentTime + scaleUpTime;
         }
         // Scale Down (Cooldown-based)
         else if (AvailableWorkers > 0 &&
-            queuedJobs == 0 && _currentWorkers > _minWorkers)
+            queuedJobs == 0 && CurrentWorkers > MinWorkers)
         {
             _scaleState = ScaleState.ScalingDown;
             _scaleEndTime = currentTime + cooldownTime;

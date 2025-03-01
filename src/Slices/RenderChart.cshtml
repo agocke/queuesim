@@ -27,6 +27,12 @@
                     data: running,
                     fill: false,
                     borderColor: 'rgb(192, 75, 75)',
+                },
+                {
+                    label: 'Current Workers',
+                    data: results.currentWorkers,
+                    fill: false,
+                    borderColor: 'rgb(75, 75, 192)',
                 }]
             };
 
@@ -45,10 +51,22 @@
                 }
             });
         }
+
+        function setScaleOptions(show)
+        {
+            var scaleOptions = document.getElementsByClassName("scaleOption");
+            for (const scaleOption of scaleOptions)
+            {
+                scaleOption.style.display = show ? "block" : "none";
+            }
+        }
     </script>
     <style>
         .formEntry {
             display: block;
+        }
+        .scaleOption {
+            display: @(Model == null || Model.OriginalConfig.WorkerPoolScaling == Sim.WorkerPoolScaling.Fixed ? "none" : "block");
         }
     </style>
 </head>
@@ -59,7 +77,7 @@
         <form style="width:100%;max-width 800px;display:block;" action="/run" method="post">
             <span class="formEntry">
                 <label>Worker Pool Scaling</label>
-                <select name="workerPoolScaling">
+                <select name="workerPoolScaling" onchange="setScaleOptions(this.value != 0)">
                     <option value="0" @(Model == null || Model.OriginalConfig.WorkerPoolScaling == Sim.WorkerPoolScaling.Fixed ? "selected" : "")>Fixed</option>
                     <option value="1" @(Model?.OriginalConfig.WorkerPoolScaling == Sim.WorkerPoolScaling.Simple ? "selected" : "")>Basic</option>
                 </select>
@@ -68,15 +86,15 @@
                 <label>Min Workers</label>
                 <input name="minWorkers" type="number" value="@(Model == null ? 1 : @Model.OriginalConfig.MinWorkers)" />
             </span>
-            <span class="formEntry">
+            <span class="scaleOption">
                 <label>Max Workers</label>
                 <input name="maxWorkers" type="number" value="@(Model == null ? 1 : @Model.OriginalConfig.MaxWorkers)" />
             </span>
-            <span class="formEntry">
+            <span class="scaleOption">
                 <label>Scale Up Time</label>
                 <input name="scaleUpTime" type="number" value="@(Model == null ? 1 : @Model.OriginalConfig.ScaleUpTime)" />
             </span>
-            <span class="formEntry">
+            <span class="scaleOption">
                 <label>Scale Down Delay</label>
                 <input name="scaleDownDelay" type="number" value="@(Model == null ? 1 : @Model.OriginalConfig.ScaleDownDelay)" />
             </span>
@@ -112,6 +130,7 @@ else
                     <th>Waiting Jobs</th>
                     <th>Finished Jobs</th>
                     <th>Running Jobs</th>
+                    <th>Current Workers</th>
                 </tr>
                 @for (int i = 0; i < Model.Result.QueueDepths.Count; i += 5)
                 {
@@ -120,6 +139,7 @@ else
                         <td>@Model.Result.QueueDepths[i]</td>
                         <td>@Model.Result.Finished[i]</td>
                         <td>@Model.Result.Running[i]</td>
+                        <td>@Model.Result.CurrentWorkers[i]</td>
                     </tr>
                 }
             </table>
