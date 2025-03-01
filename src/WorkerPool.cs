@@ -3,26 +3,24 @@ using System.Collections.Generic;
 
 namespace Queuesim;
 
-class WorkerPool(int currentWorkers)
+class FixedWorkerPool(int currentWorkers) : IWorkerPool
 {
     private record struct RunningJob(int EndTime);
 
     private readonly List<RunningJob> _runningJobs = new();
 
-    public int RunningJobs { get; private set; }
+    public int RunningJobs => _runningJobs.Count;
 
     public int AvailableWorkers => currentWorkers - RunningJobs;
 
-    public void Enqueue(int currentTime, Sim.Job job)
+    public void Enqueue(int _, int currentTime, Sim.Job job)
     {
         _runningJobs.Add(new RunningJob(currentTime + job.Duration));
-        RunningJobs++;
     }
 
-    public int RemoveFinishedJobs(int currentTime)
+    public int RemoveFinishedJobs(int _, int currentTime)
     {
         var finished = _runningJobs.RemoveAll(job => job.EndTime == currentTime);
-        RunningJobs -= finished;
         return finished;
     }
 }

@@ -8,27 +8,36 @@ static partial class Sim
 {
     public readonly partial record struct Job(int Duration);
 
-    public partial record Config(List<Config.JobGroup> JobGroups)
+    public enum WorkerPoolScaling
     {
-        public int Workers { get; init; } = 1;
+        Fixed,
+        Simple
+    }
+
+    public record Config(
+        WorkerPoolScaling WorkerPoolScaling,
+        int MinWorkers,
+        int MaxWorkers,
+        int ScaleUpTime,
+        int ScaleDownDelay
+    );
+
+    [GenerateSerde]
+    public partial record JobGroup(int StartTime) : IComparable<JobGroup>
+    {
+        public List<int>? ManualJobs { get; init; }
 
         [GenerateSerde]
-        public partial record JobGroup(int StartTime) : IComparable<JobGroup>
+        public partial record struct AutoJob(int Duration, int Count);
+        public List<AutoJob>? AutoJobs { get; init; }
+
+        public int CompareTo(JobGroup? other)
         {
-            public List<int>? ManualJobs { get; init; }
-
-            [GenerateSerde]
-            public partial record struct AutoJob(int Duration, int Count);
-            public List<AutoJob>? AutoJobs { get; init; }
-
-            public int CompareTo(JobGroup? other)
+            if (other is null)
             {
-                if (other is null)
-                {
-                    throw new ArgumentNullException(nameof(other));
-                }
-                return StartTime.CompareTo(other.StartTime);
+                throw new ArgumentNullException(nameof(other));
             }
+            return StartTime.CompareTo(other.StartTime);
         }
     }
 
@@ -52,14 +61,19 @@ static partial class Sim
         }
     }
 
-    public static Result Run(Config config)
+    public static Result Run(List<JobGroup> unsortedJobGroups, Config config)
     {
         int currentTime = 0;
 
-        var jobGroups = new PriorityQueue<Config.JobGroup>();
-        jobGroups.EnqueueRange(config.JobGroups);
+        var jobGroups = new PriorityQueue<JobGroup>();
+        jobGroups.EnqueueRange(unsortedJobGroups);
         var jobQ = new Queue<Job>();
-        var workerPool = new WorkerPool(config.Workers);
+        IWorkerPool workerPool = config.WorkerPoolScaling switch {
+            WorkerPoolScaling.Fixed => new FixedWorkerPool(config.MinWorkers),
+            WorkerPoolScaling.Simple => new ScalingWorkerPool(
+                config.MinWorkers, config.MaxWorkers, config.ScaleUpTime, config.ScaleDownDelay),
+            _ => throw new ArgumentOutOfRangeException(nameof(config.WorkerPoolScaling))
+        };
 
         var result = new Result
         {
@@ -86,11 +100,11 @@ static partial class Sim
                 }
             }
 
-            var finished = workerPool.RemoveFinishedJobs(currentTime);
+            var finished = workerPool.RemoveFinishedJobs(jobQ.Count, currentTime);
 
             while (workerPool.AvailableWorkers > 0 && jobQ.TryDequeue(out var job))
             {
-                workerPool.Enqueue(currentTime, job);
+                workerPool.Enqueue(jobQ.Count, currentTime, job);
             }
 
             result.QueueDepths.Add(jobQ.Count);

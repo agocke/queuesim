@@ -1,4 +1,5 @@
 @using Microsoft.AspNetCore.Html;
+@using Queuesim;
 @inherits RazorSliceHttpResult<Queuesim.SimResults?>
 <!DOCTYPE html>
 <html lang="en">
@@ -55,10 +56,29 @@
 <body>
     <div style="width:80%;margin:auto;">
         <h1>QueueSim</h1>
-        <form style="width:100%;max-width 800px;display:block;" action="/run" method="get">
+        <form style="width:100%;max-width 800px;display:block;" action="/run" method="post">
             <span class="formEntry">
-                <label>Workers</label>
-                <input name="workers" type="number" value="@(Model == null ? 1 : @Model.Workers)" />
+                <label>Worker Pool Scaling</label>
+                <select name="workerPoolScaling">
+                    <option value="0" @(Model == null || Model.OriginalConfig.WorkerPoolScaling == Sim.WorkerPoolScaling.Fixed ? "selected" : "")>Fixed</option>
+                    <option value="1" @(Model?.OriginalConfig.WorkerPoolScaling == Sim.WorkerPoolScaling.Simple ? "selected" : "")>Basic</option>
+                </select>
+            </span>
+            <span class="formEntry">
+                <label>Min Workers</label>
+                <input name="minWorkers" type="number" value="@(Model == null ? 1 : @Model.OriginalConfig.MinWorkers)" />
+            </span>
+            <span class="formEntry">
+                <label>Max Workers</label>
+                <input name="maxWorkers" type="number" value="@(Model == null ? 1 : @Model.OriginalConfig.MaxWorkers)" />
+            </span>
+            <span class="formEntry">
+                <label>Scale Up Time</label>
+                <input name="scaleUpTime" type="number" value="@(Model == null ? 1 : @Model.OriginalConfig.ScaleUpTime)" />
+            </span>
+            <span class="formEntry">
+                <label>Scale Down Delay</label>
+                <input name="scaleDownDelay" type="number" value="@(Model == null ? 1 : @Model.OriginalConfig.ScaleDownDelay)" />
             </span>
             <span class="formEntry">
                 <label>Jobs to submit</label>

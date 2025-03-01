@@ -5,6 +5,7 @@ using Queuesim.Slices;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using System.Linq;
+using System;
 
 namespace Queuesim;
 
@@ -12,7 +13,7 @@ internal record SimResults(
     HtmlString ChartData,
     Sim.Result Result,
     HtmlString JobData,
-    int Workers
+    Sim.Config OriginalConfig
 );
 
 class Program
@@ -28,17 +29,24 @@ class Program
             return Results.Extensions.RazorSlice<RenderChart, SimResults?>(null);
         });
 
-        app.MapGet("/run", (HttpContext ctx) => {
-            var rawJobData = ctx.Request.Query["jobData"].Single()!;
-            var jobData = JsonSerializer.DeserializeList<Sim.Config.JobGroup>(rawJobData);
-            var workers = int.Parse(ctx.Request.Query["workers"]!);
-            var results = Sim.Run(new Sim.Config(jobData) { Workers = workers });
+        app.MapPost("/run", async (HttpContext ctx) => {
+            var form = await ctx.Request.ReadFormAsync();
+            var rawJobData = form["jobData"].Single()!;
+            var jobData = JsonSerializer.DeserializeList<Sim.JobGroup>(rawJobData);
+            var config = new Sim.Config(
+                (Sim.WorkerPoolScaling)int.Parse(form["workerPoolScaling"]!),
+                int.Parse(form["minWorkers"]!),
+                int.Parse(form["maxWorkers"]!),
+                int.Parse(form["scaleUpTime"]!),
+                int.Parse(form["scaleDownDelay"]!)
+            );
+            var results = Sim.Run(jobData, config);
             var chartData = JsonSerializer.Serialize(results);
             return Results.Extensions.RazorSlice<RenderChart, SimResults?>(new(
                 new HtmlString(chartData),
                 results,
                 new HtmlString(rawJobData),
-                workers
+                config
             ));
         });
 
