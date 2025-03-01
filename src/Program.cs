@@ -29,6 +29,11 @@ class Program
             return Results.Extensions.RazorSlice<RenderChart, SimResults?>(null);
         });
 
+        app.MapGet("/run", () =>
+        {
+            return Results.Redirect("/");
+        });
+
         app.MapPost("/run", async (HttpContext ctx) => {
             var form = await ctx.Request.ReadFormAsync();
             var rawJobData = form["jobData"].Single()!;
