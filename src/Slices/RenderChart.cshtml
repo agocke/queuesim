@@ -72,9 +72,9 @@
 </head>
 
 <body>
-    <div style="width:80%;margin:auto;">
+    <div style="margin:auto;max-width:800px;">
         <h1>QueueSim</h1>
-        <form style="width:100%;max-width 800px;display:block;" action="/run" method="post">
+        <form style="display:block;" action="/run" method="post">
             <span class="formEntry">
                 <label>Worker Pool Scaling</label>
                 <select name="workerPoolScaling" onchange="setScaleOptions(this.value != 0)">
